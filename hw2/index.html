@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
+
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 		<style>
 			h1 {
@@ -9,7 +9,7 @@
 
 			.container {
 				margin: 0 auto;
-				padding: 60px 20%;
+				padding: 20px 0%;
 			}
 
 			figure {
@@ -28,7 +28,7 @@
 	<body>
 		<div class="container">
 		<h1>CS184/284A Spring 2025 Homework 2 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<div style="text-align: center;">Names: Ruoyu Lin</div>
 
 		<br>
 
@@ -52,7 +52,7 @@
 		De Casteljau's algorithm is to apply linear interpolation using parameter t to each pair of ajacent control points to get a new set of control points, and repeat this process until we only have one control point left, which is the point on the curve corresponding to the parameter t. Then iterate t from 0 to 1 to get the whole curve.
 		<p>To implement this, I only need to implement the evaluateStep function, and other procedures are done by the provided code. To implement evaluateStep, I just simply iterate i from 0 to n-2, and compute the linear interpolation of control_points[i] and control_points[i+1] using parameter t, and push it into the result vector.</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
-			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			<table style="width: 90%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
 				  <img src="b1.png" style="width: 100%;  height: auto;"/>
@@ -84,7 +84,7 @@
 			</table>
 		</div>
 		<div style="display: flex; flex-direction: column; align-items: center;">
-			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			<table style="width: 70%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
 				  <img src="b7.png" style="width: 100%;  height: auto;"/>
@@ -157,7 +157,7 @@
 
 		
 		<div style="display: flex; flex-direction: column; align-items: center;">
-			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			<table style="width: 90%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
 				  <img src="split_exp.png" style="width: 100%;  height: auto;"/>
@@ -190,7 +190,7 @@
 		</div>		
 		<p> Extra credits:</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
-			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			<table style="width: 80%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
 				  <img src="before_bound.png" style="width: 100%;  height: auto;"/>
