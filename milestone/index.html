@@ -2,7 +2,7 @@
 	<head>
 		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-		<title>gpu path tracer</title>
+		<title>CS 184 Final Project Milestone: GPU Path Tracer</title>
 		<style>
 			h1 {
 				text-align: center;
@@ -10,7 +10,8 @@
 
 			.container {
 				margin: 0 auto;
-				padding: 60px 20%;
+				padding: 2.5rem;
+				max-width: 1000px;
 			}
 
 			figure {
@@ -28,7 +29,7 @@
 	</head>
 	<body>
 		<div class="container">
-			<h1>gpu path tracer</h1>
+			<h1>CS 184 Final Project Milestone: GPU Path Tracer</h1>
 			<div style="text-align: center;">Names: Ruoyu Lin, Madhav Varshney, Harry Huang, Sarah Ryu</div>
 
 			<br>
@@ -84,7 +85,7 @@
 			</ul>
 
 			<h2>Preliminary Results</h2>
-			<p>FPS @ 1280x720</p>
+			<p>Here is the render FPS & speedup with 1 sample/pixel/frame @ 1280x720p on an Nvidia 4070 laptop GPU:</p>
 			<div style="display: flex; flex-direction: column; align-items: center;">
 				<table style="width: 100%; text-align: center; border-collapse: collapse; border: 1px solid black;">
 					<tr>
@@ -95,21 +96,21 @@
 						<td style="text-align: center; border: 1px solid black;"><b>OptiX + DLSS</b></td>
 					</tr>
 					<tr>
-						<td style="text-align: center; border: 1px solid black;">BistroInterior</td>
+						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroInterior</a></td>
 						<td style="text-align: center; border: 1px solid black;">8.5</td>
 						<td style="text-align: center; border: 1px solid black;">23</td>
 						<td style="text-align: center; border: 1px solid black;">96</td>
 						<td style="text-align: center; border: 1px solid black;">186</td>
 					</tr>
 					<tr>
-						<td style="text-align: center; border: 1px solid black;">MEASURE_SEVEN_COLORED_LIGHTS</td>
+						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/beeple-zero-day">MEASURE_SEVEN_COLORED_LIGHTS</a></td>
 						<td style="text-align: center; border: 1px solid black;">14.4</td>
 						<td style="text-align: center; border: 1px solid black;">38</td>
 						<td style="text-align: center; border: 1px solid black;">126</td>
 						<td style="text-align: center; border: 1px solid black;">209</td>
 					</tr>
 					<tr>
-						<td style="text-align: center; border: 1px solid black;">BistroExterior</td>
+						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroExterior</a></td>
 						<td style="text-align: center; border: 1px solid black;">13.8</td>
 						<td style="text-align: center; border: 1px solid black;">37</td>
 						<td style="text-align: center; border: 1px solid black;">149</td>
