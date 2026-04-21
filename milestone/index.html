@@ -1,0 +1,127 @@
+<html>
+	<head>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+		<title>gpu path tracer</title>
+		<style>
+			h1 {
+				text-align: center;
+			}
+
+			.container {
+				margin: 0 auto;
+				padding: 0px 0%;
+			}
+
+			figure {
+				text-align: center;
+			}
+
+			img {
+				display: inline-block;
+			}
+
+			body {
+				font-family: 'Inter', sans-serif;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>gpu path tracer</h1>
+			<div style="text-align: center;">Names: Ruoyu Lin, Madhav Varshney, Harry Huang, Sarah Ryu</div>
+
+			<br>
+
+			Link to webpage:
+			<a href="https://cal-cs184-student.github.io/hw-webpages-alxdsptr/milestone">https://cal-cs184-student.github.io/hw-webpages-alxdsptr/milestone</a>
+
+			<br>
+
+			Google Drive link (contains video and slides):
+			<a href="https://drive.google.com/drive/u/1/folders/1mK8NveM1EBgDR_gTUC1DXSX09Pqsd7ny">https://drive.google.com/drive/u/1/folders/1mK8NveM1EBgDR_gTUC1DXSX09Pqsd7ny</a>
+
+			<h2>Overview</h2>
+			<p>
+				For this project, we have been rewriting the original HW3 path tracer into a new general-purpose,
+				GPU-oriented framework. Our primary goal has been rendering complex scenes much faster than the
+				CPU-based implementation, ideally close to real-time.
+			</p>
+
+			<h2>Current Progress</h2>
+			<!-- <p>So far, this framework supports:</p> -->
+			<ul>
+				<li>Different model formats through Open Asset Import Library (assimp)</li>
+				<li>A modern display output pipeline (Vulkan) with interactive navigation</li>
+				<li>Path tracing via CUDA kernels with basic acceleration data structures (e.g., BVH) rewritten</li>
+				<li>Texture loading, including basic albedo textures, normal maps, and emissive textures</li>
+				<li>Cook-Torrance BRDF for most materials, Lambertian fallback for .dae files, and transmission for glass</li>
+				<li>
+					Direct light sampling for emissive triangles using a global CDF built from triangle weights
+					(proportional to area and average emissive luminance), enabling \(O(\log N)\) importance sampling
+				</li>
+				<li>
+					MIS using the power heuristic to combine NEE and BSDF sampling:
+					\(w_{\text{light}} = p_{\text{light}}^2 / (p_{\text{light}}^2 + p_{\text{bsdf}}^2)\),
+					\(w_{\text{bsdf}} = p_{\text{bsdf}}^2 / (p_{\text{bsdf}}^2 + p_{\text{light}}^2)\)
+				</li>
+				<li>Denoising and upsampling for real-time: DLSS support and NVIDIA Real-Time Denoisers (NRD) (working with CUDA but not OptiX yet)</li>
+				<li>OptiX backend implementation, ported from CUDA path-tracing kernels to leverage RT-core hardware acceleration</li>
+			</ul>
+
+			<p>
+				Compared to our original plan, we are already far along in many aspects, and the framework can now render
+				fairly large, complex scenes with both CUDA and OptiX acceleration.
+			</p>
+
+			<h2>Planned Next Steps</h2>
+			<ul>
+				<li>Light BVH for more efficient light importance sampling and reduced noise</li>
+				<li>Importance sampling for environment lighting</li>
+				<li>Volumetric rendering</li>
+				<li>ReSTIR support</li>
+				<li>Other noise-reduction attempts</li>
+			</ul>
+
+			<h2>Preliminary Results</h2>
+			<p>FPS @ 1280x720</p>
+			<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse; border: 1px solid black;">
+					<tr>
+						<td style="text-align: center; border: 1px solid black;"><b>Scene</b></td>
+						<td style="text-align: center; border: 1px solid black;"><b>CUDA</b></td>
+						<td style="text-align: center; border: 1px solid black;"><b>CUDA + DLSS</b></td>
+						<td style="text-align: center; border: 1px solid black;"><b>OptiX</b></td>
+						<td style="text-align: center; border: 1px solid black;"><b>OptiX + DLSS</b></td>
+					</tr>
+					<tr>
+						<td style="text-align: center; border: 1px solid black;">BistroInterior</td>
+						<td style="text-align: center; border: 1px solid black;">8.5</td>
+						<td style="text-align: center; border: 1px solid black;">23</td>
+						<td style="text-align: center; border: 1px solid black;">96</td>
+						<td style="text-align: center; border: 1px solid black;">186</td>
+					</tr>
+					<tr>
+						<td style="text-align: center; border: 1px solid black;">MEASURE_SEVEN_COLORED_LIGHTS</td>
+						<td style="text-align: center; border: 1px solid black;">14.4</td>
+						<td style="text-align: center; border: 1px solid black;">38</td>
+						<td style="text-align: center; border: 1px solid black;">126</td>
+						<td style="text-align: center; border: 1px solid black;">209</td>
+					</tr>
+					<tr>
+						<td style="text-align: center; border: 1px solid black;">BistroExterior</td>
+						<td style="text-align: center; border: 1px solid black;">13.8</td>
+						<td style="text-align: center; border: 1px solid black;">37</td>
+						<td style="text-align: center; border: 1px solid black;">149</td>
+						<td style="text-align: center; border: 1px solid black;">240</td>
+					</tr>
+				</table>
+			</div>
+
+			<figure>
+				<img src="bistro_interior.png" alt="Bistro Interior render" style="width: 100%; max-width: 900px; height: auto;"/>
+				<figcaption>BistroInterior preview</figcaption>
+			</figure>
+		</div>
+	</body>
+</html>
