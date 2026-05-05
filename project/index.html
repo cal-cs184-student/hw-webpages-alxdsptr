@@ -71,6 +71,48 @@
             margin-left: 0;
             margin-right: 0;
         }
+
+        .full-width {
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+        }
+
+        .image-grid {
+            display: grid;
+            /* This creates as many columns as fit, each at least 400px wide */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .image-grid figure {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .image-grid.restir figcaption {
+            font-weight: bold;
+            /* text-transform: uppercase; */
+            margin-bottom: 8px;
+            /* font-family: sans-serif; */
+            color: #333;
+        }
+
+        .image-grid img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -210,16 +252,18 @@
             <figcaption>Sun shafts / god rays through a tree in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroExterior</a></figcaption>
         </figure>
 
-        <div style="display: flex">
-        <figure style="flex: 1">
+        <div class="full-width">
+        <div class="image-grid">
+        <figure>
             <img src="assets/fog_cbdragon.png">
             <figcaption>Basic colored fog</figcaption>
         </figure>
 
-        <figure style="flex: 1">
+        <figure>
             <img src="assets/fog_bistro_exterior.png">
             <figcaption>Fog in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroExterior</a></figcaption>
         </figure>
+       </div>
        </div>
 
 
@@ -294,86 +338,38 @@
         </ul>
         <p><strong>Engineering trade-off.</strong> For simplicity, we only implement the reconnection shift — both the base and offset paths use a hard connection on the \(\mathbf{q} \to \mathbf{x}_r\) segment. The hybrid shift is not implemented. This means paths involving fully specular or glass chains cannot be meaningfully reused: their reconnection would land on a near-delta BSDF lobe, producing a contribution that is essentially zero at the offset pixel. To handle this gracefully, we apply a roughness gate — reconnection is only permitted when the GGX roughness \(\alpha \geq 0.2\) at the reconnection vertex. Paths that fail this test are discarded early rather than being allowed to pollute the reservoir with near-zero-weight samples. The practical consequence is that in scenes dominated by metal-glass combinations, ReSTIR PT degrades to standard path tracing. However, such scenes are rare in our test suite, so this limitation has little impact on overall results.</p>
 
-        <!-- <table class='grid'>
-        <tr>
-        <th>reference</th>
-        <th>native</th>
-        <th>restir-di</th>
-        <th>restir-di-gi</th>
-        <th>restir-di-pt</th>
-        </tr>
-        <tr>
-        <td><img src='reference_000030.png'></td>
-        <td><img src='native_000030.png'></td>
-        <td><img src='restir-di_000030.png'></td>
-        <td><img src='restir-di-gi_000030.png'></td>
-        <td><img src='restir-di-pt_000030.png'></td>
-        </tr>
-        </table> -->
 
-
-        <style>
-        .image-grid {
-            display: grid;
-            /* This creates as many columns as fit, each at least 400px wide */
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            padding: 10px;
-        }
-
-        .image-grid figure {
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .image-grid figcaption {
-            font-weight: bold;
-            /* text-transform: uppercase; */
-            margin-bottom: 8px;
-            /* font-family: sans-serif; */
-            color: #333;
-        }
-
-        .image-grid img {
-            width: 100%;
-            height: auto;
-            display: block;
-            border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        </style>
-
-        <div class="image-grid">
+        <div class="full-width">
+        <div class="image-grid restir">
         <figure>
             <figcaption>reference</figcaption>
-            <img src="reference_000030.png" alt="reference">
+            <img src="assets/reference_000030.png" alt="reference">
         </figure>
 
         <figure>
             <figcaption>native</figcaption>
-            <img src="native_000030.png" alt="native">
+            <img src="assets/native_000030.png" alt="native">
         </figure>
 
         <figure>
             <figcaption>restir-di</figcaption>
-            <img src="restir-di_000030.png" alt="restir-di">
+            <img src="assets/restir-di_000030.png" alt="restir-di">
         </figure>
 
         <figure>
             <figcaption>restir-di-gi</figcaption>
-            <img src="restir-di-gi_000030.png" alt="restir-di-gi">
+            <img src="assets/restir-di-gi_000030.png" alt="restir-di-gi">
         </figure>
 
         <figure>
             <figcaption>restir-di-pt</figcaption>
-            <img src="restir-di-pt_000030.png" alt="restir-di-pt">
+            <img src="assets/restir-di-pt_000030.png" alt="restir-di-pt">
         </figure>
+        </div>
         </div>
 
         <h3> OptiX, NRD, and DLSS Integration</h3>
-                <p>
+        <p>
             To use RT cores instead of CUDA cores for ray tracing, we integrated <strong>OptiX</strong>. This required compiling our path-tracing kernels as OptiX raygen / closest-hit / miss / any-hit programs, building a hardware BVH (GAS) over the scene, and setting up a Shader Binding Table that selects the right raygen entry per render mode.
         </p>
         <p>
@@ -386,28 +382,24 @@
             Even though all three SDKs are pre-written by NVIDIA, getting them to behave together took a long debugging cycle: encoding mismatches between NRD and DLSS, the wrong depth type fed to DLSS-RR, double-jittering when NRD and DLSS-SR are chained, history not resetting on scene reloads, etc. After many iterations things finally line up, but some subtle issues likely remain unresolved.
         </p>
 
-        <table class='grid' style="width: 100%; table-layout: fixed;">
-            <tr>
-                <td>
-                    <figure>
-                        <img src='nrd-off_000000.png'>
-                        <figcaption>NRD off</figcaption>
-                    </figure>
-                </td>
-                <td>
-                    <figure>
-                        <img src='nrd-on-no-restir_000000.png'>
-                        <figcaption>NRD with no ReSTIR</figcaption>
-                    </figure>
-                </td>
-                <td>
-                    <figure>
-                        <img src='nrd-on-di-only_000000.png'>
-                        <figcaption>NRD with ReSTIR</figcaption>
-                    </figure>
-                </td>
-            </tr>
-        </table>
+        <div class="full-width">
+        <div class="image-grid">
+            <figure>
+                <img src='assets/nrd-off_000000.png'>
+                <figcaption style="margin-top: 0.5rem">NRD off</figcaption>
+            </figure>
+
+            <figure>
+                <img src='assets/nrd-on-no-restir_000000.png'>
+                <figcaption style="margin-top: 0.5rem">NRD with no ReSTIR</figcaption>
+            </figure>
+
+            <figure>
+                <img src='assets/nrd-on-di-only_000000.png'>
+                <figcaption style="margin-top: 0.5rem">NRD with ReSTIR</figcaption>
+            </figure>
+        </div>
+        </div>
 
         <h3>Performance</h3>
         <p>Here is the render FPS & speedup with 1 sample/pixel/frame @ 1280x720p on an Nvidia 4070 laptop GPU:</p>
@@ -496,7 +488,7 @@
         <b>Contributions:</b>
         <ul>
             <li>Ruoyu: Did the largest chunk of the work! Most of the implementation: created the framework, set up basic path tracer with CUDA & OptiX, implemented ReSTIR, etc.</li>
-            <li>Madhav: Wrote proposal, made milestone video, and made report website. Implemented directional lighting, spotlights, and volumetric fog in new frameworks, fixed some bugs, did initial experimentation & animations with hw3 codebase before we created our own framework, and set up GPU/OpenGL access for others over SSH.</li>
+            <li>Madhav: Wrote proposal, made milestone video, and made report website. Implemented directional lighting, spotlights, and volumetric fog in new framework, and fixed some bugs. Did initial experimentation & animations with hw3 codebase before we created our own framework, and set up GPU/OpenGL access for others over SSH.</li>
             <li>Sarah: Helped with proposal.</li>
         </ul>
     </section>
