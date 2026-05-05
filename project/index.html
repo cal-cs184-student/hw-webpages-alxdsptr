@@ -87,7 +87,7 @@
         Slides: <a href="https://docs.google.com/presentation/d/1n7q62EQHurB_3B-XP5PE5sxp8KOv4Cl8ubBvNd0pqZU/edit?slide=id.p#slide=id.p">See on Google Slides</a> <br>
         Code: <a href="https://github.com/alxdsptr/cs184_project">https://github.com/alxdsptr/cs184_project</a> <br>
 
-        <p><i>Note: If reading the PDF, please check the website for animated GIFs / videos in some of the sections below!</i></p>
+        <p><i>Note: If reading the PDF, please check the website to see animated GIFs / videos in some of the sections below!</i></p>
     </section>
 
     <section class="abstract">
@@ -100,7 +100,7 @@
     <section>
         <h2>Technical Approach</h2>
 
-        <p>Summary: TODO</p>
+        <p>For our path tracing framework, we used Open Asset Import Library (assimp) to support different model formats and settled on using Vulkan for the dispay output pipeline. We added support for loading textures, including basic albedo textures, normal maps, and emissive textures. In the following sections, we skip the details on implementing the general GPU-based path tracer (ex. GPU data structures, BVH acceleration, etc.) and focus on some of the bigger, specific features we added to support complex scenes and real-time path tracing.</p>
 
         <h3>Next Event Estimation</h3>
         <p>
@@ -169,7 +169,7 @@
 
         <figure>
             <img src="assets/bistro_interior.png">
-            <figcaption><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroInterior</a> Render</figcaption>
+            <figcaption><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroInterior</a> render showing these features</figcaption>
         </figure>
 
 
@@ -252,9 +252,9 @@
 
         <p>As \(M \to \infty\), the distribution of \(y\) converges to \(\hat{p}\). In practice \(\hat{p}\) can be the unshadowed path contribution \(\rho \cdot L_e \cdot G\), which is cheap to evaluate — we only need to trace a shadow ray for the <em>one</em> surviving sample \(y\).</p>
 
-        <p><strong>Streaming RIS via reservoir sampling.</strong> Storing all \(M\) candidates is impractical on a GPU. Fortunately, <strong>weighted reservoir sampling (WRS)</strong> lets us process candidates one at a time, keeping only the current winner in a small "reservoir" \((y, w_\text{sum}, M)\). Each new candidate \(x_i\) replaces \(y\) with probability \(w(x_i)/w_\text{sum}\). The result is mathematically identical to full RIS, but uses \(O(1)\) memory regardless of \(M\).</p>
+        <p><strong>Streaming RIS via reservoir sampling:</strong> Storing all \(M\) candidates is impractical on a GPU. Fortunately, <strong>weighted reservoir sampling (WRS)</strong> lets us process candidates one at a time, keeping only the current winner in a small "reservoir" \((y, w_\text{sum}, M)\). Each new candidate \(x_i\) replaces \(y\) with probability \(w(x_i)/w_\text{sum}\). The result is mathematically identical to full RIS, but uses \(O(1)\) memory regardless of \(M\).</p>
 
-        <p><strong>Spatiotemporal reuse.</strong> A key property of reservoirs is that they can be <em>merged</em>: the union of two reservoirs' input streams is simulated by treating each reservoir's winner as a fresh candidate with weight \(\hat{p}(y) \cdot W \cdot M\). This enables two powerful reuse strategies:</p>
+        <p><strong>Spatiotemporal reuse:</strong> A key property of reservoirs is that they can be <em>merged</em>: the union of two reservoirs' input streams is simulated by treating each reservoir's winner as a fresh candidate with weight \(\hat{p}(y) \cdot W \cdot M\). This enables two powerful reuse strategies:</p>
         <ul>
             <li><strong>Spatial reuse:</strong> each pixel combines its reservoir with those of \(k\) random spatial neighbors. Per-pixel cost is \(O(k + M)\), but the effective candidate count grows to \(k^n M\) after \(n\) iterations.</li>
             <li><strong>Temporal reuse:</strong> the previous frame's reservoir is fed into the current frame, amortizing sample cost over time and dramatically reducing noise after just a few frames.</li>
@@ -274,11 +274,11 @@
         <div class="hr"></div>
 
         <h4>ReSTIR GI</h4>
-        <p>ReSTIR DI only handles direct lighting — the first bounce from lights to camera. ReSTIR GI extends the framework to <strong>multi-bounce indirect illumination</strong>.</p>
-        <p><strong>The core change: where samples live.</strong> Instead of sampling points on light surfaces, ReSTIR GI samples <em>directions</em> from each visible surface point and traces rays to find "sample points" \(x_s\) on scene geometry. At each sample point, the outgoing radiance \(\hat{L}_o(x_s)\) is estimated by path tracing. The target function becomes:</p>
+        <p>ReSTIR GI extends the framework from only handling direct lighting to <strong>multi-bounce indirect illumination</strong>.</p>
+        <p>The core change is where samples live. Instead of sampling points on light surfaces, ReSTIR GI samples <em>directions</em> from each visible surface point and traces rays to find "sample points" \(x_s\) on scene geometry. At each sample point, the outgoing radiance \(\hat{L}_o(x_s)\) is estimated by path tracing. The target function becomes:</p>
         <p>$$\hat{p} = L_o(x_s) \cdot f(\omega_o, \omega_i) \cdot \langle \cos\theta_i \rangle$$</p>
         <p>or simply \(\hat{p} = L_o(x_s)\) for a simpler but still effective variant that generalizes better across neighbors.</p>
-        <p><strong>The Jacobian correction.</strong> When a sample point \(x_s\) is reused from neighbor pixel \(q\) at pixel \(r\), the solid-angle PDF transforms differently between the two pixels. This requires a Jacobian correction during spatial reuse:</p>
+        <p><strong>The Jacobian correction:</strong> When a sample point \(x_s\) is reused from neighbor pixel \(q\) at pixel \(r\), the solid-angle PDF transforms differently between the two pixels. This requires a Jacobian correction during spatial reuse:</p>
         <p>$$|J_{q \to r}| = \frac{|\cos\phi_2^r|}{|\cos\phi_2^q|} \cdot \frac{|x_1^q - x_2^q|^2}{|x_1^r - x_2^q|^2}$$</p>
         <p>Ignoring this factor introduces lighting discontinuities. No such correction was needed in ReSTIR DI because light samples were drawn globally, independent of each pixel's local geometry.</p>
 
@@ -294,23 +294,83 @@
         </ul>
         <p><strong>Engineering trade-off.</strong> For simplicity, we only implement the reconnection shift — both the base and offset paths use a hard connection on the \(\mathbf{q} \to \mathbf{x}_r\) segment. The hybrid shift is not implemented. This means paths involving fully specular or glass chains cannot be meaningfully reused: their reconnection would land on a near-delta BSDF lobe, producing a contribution that is essentially zero at the offset pixel. To handle this gracefully, we apply a roughness gate — reconnection is only permitted when the GGX roughness \(\alpha \geq 0.2\) at the reconnection vertex. Paths that fail this test are discarded early rather than being allowed to pollute the reservoir with near-zero-weight samples. The practical consequence is that in scenes dominated by metal-glass combinations, ReSTIR PT degrades to standard path tracing. However, such scenes are rare in our test suite, so this limitation has little impact on overall results.</p>
 
-        <table class='grid'>
-<tr>
-<th>reference</th>
-<th>native</th>
-<th>restir-di</th>
-<th>restir-di-gi</th>
-<th>restir-di-pt</th>
-</tr>
-<tr>
-<td><img src='reference_000030.png'></td>
-<td><img src='native_000030.png'></td>
-<td><img src='restir-di_000030.png'></td>
-<td><img src='restir-di-gi_000030.png'></td>
-<td><img src='restir-di-pt_000030.png'></td>
-</tr>
+        <!-- <table class='grid'>
+        <tr>
+        <th>reference</th>
+        <th>native</th>
+        <th>restir-di</th>
+        <th>restir-di-gi</th>
+        <th>restir-di-pt</th>
+        </tr>
+        <tr>
+        <td><img src='reference_000030.png'></td>
+        <td><img src='native_000030.png'></td>
+        <td><img src='restir-di_000030.png'></td>
+        <td><img src='restir-di-gi_000030.png'></td>
+        <td><img src='restir-di-pt_000030.png'></td>
+        </tr>
+        </table> -->
 
-</table>
+
+        <style>
+        .image-grid {
+            display: grid;
+            /* This creates as many columns as fit, each at least 400px wide */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 10px;
+        }
+
+        .image-grid figure {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .image-grid figcaption {
+            font-weight: bold;
+            /* text-transform: uppercase; */
+            margin-bottom: 8px;
+            /* font-family: sans-serif; */
+            color: #333;
+        }
+
+        .image-grid img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        </style>
+
+        <div class="image-grid">
+        <figure>
+            <figcaption>reference</figcaption>
+            <img src="reference_000030.png" alt="reference">
+        </figure>
+
+        <figure>
+            <figcaption>native</figcaption>
+            <img src="native_000030.png" alt="native">
+        </figure>
+
+        <figure>
+            <figcaption>restir-di</figcaption>
+            <img src="restir-di_000030.png" alt="restir-di">
+        </figure>
+
+        <figure>
+            <figcaption>restir-di-gi</figcaption>
+            <img src="restir-di-gi_000030.png" alt="restir-di-gi">
+        </figure>
+
+        <figure>
+            <figcaption>restir-di-pt</figcaption>
+            <img src="restir-di-pt_000030.png" alt="restir-di-pt">
+        </figure>
+        </div>
 
         <h3> OptiX, NRD, and DLSS Integration</h3>
                 <p>
@@ -349,10 +409,7 @@
             </tr>
         </table>
 
-    </section>
-
-    <section>
-        <h2>Performance</h2>
+        <h3>Performance</h3>
         <p>Here is the render FPS & speedup with 1 sample/pixel/frame @ 1280x720p on an Nvidia 4070 laptop GPU:</p>
 
 			<div style="display: flex; flex-direction: column; align-items: center;">
@@ -395,8 +452,13 @@
 				</table>
 			</div>
 
+    </section>
 
-            <h2>Final Results</h2>
+    <section>
+
+        <h2>Final Results</h2>
+
+        <p>Please see these clips:</p>
 
     </section>
 
