@@ -294,6 +294,61 @@
         </ul>
         <p><strong>Engineering trade-off.</strong> For simplicity, we only implement the reconnection shift — both the base and offset paths use a hard connection on the \(\mathbf{q} \to \mathbf{x}_r\) segment. The hybrid shift is not implemented. This means paths involving fully specular or glass chains cannot be meaningfully reused: their reconnection would land on a near-delta BSDF lobe, producing a contribution that is essentially zero at the offset pixel. To handle this gracefully, we apply a roughness gate — reconnection is only permitted when the GGX roughness \(\alpha \geq 0.2\) at the reconnection vertex. Paths that fail this test are discarded early rather than being allowed to pollute the reservoir with near-zero-weight samples. The practical consequence is that in scenes dominated by metal-glass combinations, ReSTIR PT degrades to standard path tracing. However, such scenes are rare in our test suite, so this limitation has little impact on overall results.</p>
 
+        <table class='grid'>
+<tr>
+<th>reference</th>
+<th>native</th>
+<th>restir-di</th>
+<th>restir-di-gi</th>
+<th>restir-di-pt</th>
+</tr>
+<tr>
+<td><img src='reference_000030.png'></td>
+<td><img src='native_000030.png'></td>
+<td><img src='restir-di_000030.png'></td>
+<td><img src='restir-di-gi_000030.png'></td>
+<td><img src='restir-di-pt_000030.png'></td>
+</tr>
+
+</table>
+
+        <h3> OptiX, NRD, and DLSS Integration</h3>
+                <p>
+            To use RT cores instead of CUDA cores for ray tracing, we integrated <strong>OptiX</strong>. This required compiling our path-tracing kernels as OptiX raygen / closest-hit / miss / any-hit programs, building a hardware BVH (GAS) over the scene, and setting up a Shader Binding Table that selects the right raygen entry per render mode.
+        </p>
+        <p>
+            Even with all the variance-reduction work above, a 1-spp image is still very noisy, so we plug in <strong>NRD</strong> as a post-render denoiser. NRD does not just take the final color: it requires us to emit a richer G-buffer per frame - diffuse and specular radiance demodulated by their albedos (RGBA16F), per-pixel hit distance, view-space linear Z (R32F), world-space normal + roughness (RGBA8), and pixel-space motion vectors (RG16F). Composing these correctly (and re-multiplying albedo back in afterwards) is most of the work.
+        </p>
+        <p>
+            To push performance further we add <strong>DLSS</strong>: render at a lower internal resolution (e.g. 742x418) and let a neural network upsample to 1280x720, leveraging Tensor cores. DLSS-SR needs HDR color, NDC depth (post-perspective, <em>not</em> the linear viewZ NRD wants - they share a G-buffer slot but not encoding), motion vectors, and a Halton jitter offset on the camera. DLSS-RR replaces NRD entirely and additionally needs world normals in floating point, diffuse and specular albedo, and the specular hit distance from the primary surface to the first indirect bounce.
+        </p>
+        <p>
+            Even though all three SDKs are pre-written by NVIDIA, getting them to behave together took a long debugging cycle: encoding mismatches between NRD and DLSS, the wrong depth type fed to DLSS-RR, double-jittering when NRD and DLSS-SR are chained, history not resetting on scene reloads, etc. After many iterations things finally line up, but some subtle issues likely remain unresolved.
+        </p>
+
+        <table class='grid' style="width: 100%; table-layout: fixed;">
+            <tr>
+                <td>
+                    <figure>
+                        <img src='nrd-off_000000.png'>
+                        <figcaption>NRD off</figcaption>
+                    </figure>
+                </td>
+                <td>
+                    <figure>
+                        <img src='nrd-on-no-restir_000000.png'>
+                        <figcaption>NRD with no ReSTIR</figcaption>
+                    </figure>
+                </td>
+                <td>
+                    <figure>
+                        <img src='nrd-on-di-only_000000.png'>
+                        <figcaption>NRD with ReSTIR</figcaption>
+                    </figure>
+                </td>
+            </tr>
+        </table>
+
     </section>
 
     <section>
