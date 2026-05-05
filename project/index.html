@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time GPU Path Tracing</title>
+    <!-- MathJax Script for LaTeX rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.5;
+            color: #333;
+            max-width: 850px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #fdfdfd;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+        h2 {
+            border-bottom: 2px solid #eaeaea;
+            padding-bottom: 10px;
+            margin-top: 40px;
+            color: #2c3e50;
+            font-size: 1.8rem;
+        }
+        h3 {
+            margin-top: 30px;
+            font-size: 1.4rem;
+            color: #34495e;
+        }
+        h4 {
+            font-size: 1rem;
+        }
+        /* .abstract {
+            background: #f9f9f9;
+            padding: 25px;
+            border-left: 5px solid #3498db;
+            font-style: italic;
+            margin-bottom: 30px;
+        } */
+        p {
+            margin-bottom: 1.5em;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        ul {
+            margin-bottom: 1.5em;
+        }
+        li {
+            margin-bottom: 0.5em;
+        }
+    </style>
+</head>
+<body>
+
+<article>
+    <header>
+        <h1>Real-Time GPU Path Tracing</h1>
+        <div style="text-align: center;">By: Ruoyu Lin, Madhav Varshney, Sarah Ryu</div>
+    </header>
+
+    <section>
+        Webpage: <a href="https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/">https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/</a> <br>
+        Video: <a href="https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/video.mp4">https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/video.mp4</a> <br>
+        Slides: <a href="https://docs.google.com/presentation/d/1n7q62EQHurB_3B-XP5PE5sxp8KOv4Cl8ubBvNd0pqZU/edit?slide=id.p#slide=id.p">See on Google Slides</a> <br>
+    </section>
+
+    <section class="abstract">
+        <h2>Abstract</h2>
+        <p>
+            We have developed a general-purpose GPU path tracing framework from scratch, designed to handle complex scenes with real-time interactivity. It features both a native CUDA backend and an OptiX-based version that utilizes RT Cores for hardware acceleration. Our framework has an interactive GUI and can load any asset file, and it supports Cook-Torrance BRDFs, transmission for glass, and volumetric scattering. To ensure high-fidelity results at real-time frame rates, we integrated several variance reduction techniques, including Light BVH for Next Event Estimation (NEE) sampling, Multiple Importance Sampling (MIS) to combine NEE and BSDF sampling, and the ReSTIR (DI/GI/PT) family of algorithms. For final output refinement, we support three denoising modes: NRD, NRD + DLSS, and DLSS-RR.
+        </p>
+    </section>
+
+    <section>
+        <h2>Technical Approach</h2>
+
+        <p>Summary: TODO</p>
+
+        <h3>Next Event Estimation</h3>
+        <p>
+            When a scene contains a large number of emissive objects, iterating through every single light source during direct light sampling becomes prohibitively expensive; therefore, an efficient sampling method is required.
+        </p>
+        <p>
+            Initially, our implementation treated every emissive triangle as a separately sample-able light. At scene load, each such triangle is assigned a scalar weight \(w_t = \text{area}_t \cdot \bar{L}_t \cdot L(\text{albedo})\), where \(\bar{L}_t\) is the average linear luminance over the triangle's UV footprint in its emissive texture. These weights form a global CDF over all triangles: at sample time, we perform a binary search to pick a triangle, then randomly sample a point within it and use its emission as the result.
+        </p>
+        <p>
+            However, this approach is spatially blind: a shading point close to one lamp and far from another samples both at the same rate. Consequently, we further implemented a light BVH, which clusters emitters into a spatial hierarchy whose internal nodes cache total flux and a bounding volume. It samples top-down with child probabilities proportional to \(\Phi_c / d_c^2\). This concentrates shadow rays on nearby lights, providing far better PDFs at the same \(O(\log N)\) cost.
+        </p>
+
+        <h3>BSDF models</h3>
+        <p>
+            The kernel dispatches on two BSDF families based on material flags: <strong>Cook-Torrance</strong> (default PBR) and <strong>smooth dielectric</strong> (transmissive glass).
+        </p>
+
+        <h4>Cook-Torrance (metallic-roughness)</h4>
+        <p>
+            The default path for all modern PBR assets. The BRDF is
+        </p>
+        <p>
+            \[f_r(\omega_i,\omega_o) = \underbrace{(1-F)(1-\text{metallic}) \frac{\mathbf{c}}{\pi}}_{\text{diffuse}} \;+\; \underbrace{\frac{F \cdot D \cdot G}{4(\mathbf{n}\cdot\omega_i)(\mathbf{n}\cdot\omega_o)}}_{\text{specular}},\]
+        </p>
+        <p>
+            with <strong>GGX/Trowbridge-Reitz</strong> NDF \(D(\mathbf{h}) = \alpha^2 / \big(\pi((\mathbf{n}\cdot\mathbf{h})^2(\alpha^2-1)+1)^2\big)\) where \(\alpha = \text{roughness}^2\), <strong>Smith-GGX</strong> shadowing \(G = G_1(\omega_i) G_1(\omega_o)\) with \(G_1(\mathbf{v}) = 2(\mathbf{n}\cdot\mathbf{v}) / \big((\mathbf{n}\cdot\mathbf{v}) + \sqrt{\alpha^2 + (1-\alpha^2)(\mathbf{n}\cdot\mathbf{v})^2}\big)\), and <strong>Schlick Fresnel</strong> \(F = F_0 + (1-F_0)(1-\mathbf{h}\cdot\omega_o)^5\) with \(F_0 = \text{lerp}(0.04,\,\mathbf{c},\,\text{metallic})\).
+        </p>
+        <p>
+            Sampling uses a <strong>diffuse / specular lobe mixture</strong>. At each shading point we compute a Fresnel-weighted specular probability
+        </p>
+        <p>
+            \[p_\text{spec} = \text{clamp}\!\left(\frac{L(F)}{L(F) + L((1-F)(1-\text{metallic})\mathbf{c})},\,0.1,\,0.9\right),\]
+        </p>
+        <p>
+            draw \(\xi\), and either GGX-importance-sample a half-vector to reflect about (specular branch) or cosine-hemisphere sample (diffuse branch). The MIS-friendly combined pdf is \(p = p_\text{spec}\,p_\text{GGX} + (1-p_\text{spec})\,(\mathbf{n}\cdot\omega_o)/\pi\).
+        </p>
+
+        <h4>Smooth dielectric (glass)</h4>
+        <p>
+            We model transparent materials (glass, water) as smooth dielectric interfaces parameterised only by the index of refraction \(\eta\). At a hit point we stochastically choose reflection or refraction weighted by the Fresnel term.
+        </p>
+        <p>
+            <strong>Fresnel reflectance.</strong> For unpolarized light crossing a dielectric boundary with relative IOR \(\eta = \eta_i / \eta_t\), the reflected energy fraction is given by the exact Fresnel equations:
+        </p>
+        <p>
+            \[ F_r(\cos\theta_i) = \tfrac{1}{2}\left(r_\parallel^2 + r_\perp^2\right), \quad r_\parallel = \frac{\eta_t\cos\theta_i - \eta_i\cos\theta_t}{\eta_t\cos\theta_i + \eta_i\cos\theta_t}, \quad r_\perp = \frac{\eta_i\cos\theta_i - \eta_t\cos\theta_t}{\eta_i\cos\theta_i + \eta_t\cos\theta_t} \]
+        </p>
+        <p>
+            with \(\cos\theta_t\) obtained from Snell's law \(\eta_i\sin\theta_i = \eta_t\sin\theta_t\). If \(\sin^2\theta_t > 1\), total internal reflection occurs and \(F_r = 1\).
+        </p>
+        <p>
+            The sampling process is very straightforward: generate a random number, and if it is less than \(F_r\), the ray reflects; otherwise, it refracts according to Snell's law. If total internal reflection (TIR) occurs, it is forced to reflect.
+        </p>
+        <p>
+            \[
+            \omega_o =
+            \begin{cases}
+            \omega_i - 2(\omega_i \cdot \mathbf{n})\,\mathbf{n}, & \xi < F_r \\
+            \eta\,\omega_i + \left(\eta\cos\theta_i - \cos\theta_t\right)\mathbf{n}, & \text{otherwise}
+            \end{cases}
+            \]
+        </p>
+        <p>
+            Since such a perfectly smooth surface belongs to a Dirac-delta distribution, the \(\delta\) functions in the BSDF value and the sampling PDF cancel each other out exactly, making the throughput update very simple: you only need to multiply by the material's color. For tinted glass, we apply a simple Beer-Lambert absorption on the rays exiting the medium.
+        </p>
+
+        <h3>Volumetric Rendering</h4>
+        <p>
+            To render realistic atmospheric effects, we solve the Volume Rendering Equation along each camera ray:
+        </p>
+        <p>
+            \[L = T(s)L_{\text{surf}} + \int_0^s T(t)\sigma_s(t)L_s(t)dt\]
+        </p>
+        <ul>
+            <li><strong>Surface Term (\(T(s)L_{\text{surf}}\)):</strong> Light from the solid object behind the fog, dimmed by the transmittance \(T(s)\).</li>
+            <li><strong>In-scattering Term (\(\int \dots\)):</strong> The "glow" created by light hitting particles along the ray and bouncing toward the camera.</li>
+            <li><strong>Transmittance (\(T\)):</strong> The probability that light travels a distance \(t\) without being absorbed or scattered, defined by the Beer-Lambert law:
+                \[T(t) = \exp\left(-\int_0^t \sigma_t(u)du\right)\]
+                We support a constant base density plus an <strong>exponential height-fog</strong> (\(\sigma_t \propto \exp(-(y-y_0)/h)\)), meaning the fog thins out as altitude increases.
+            </li>
+        </ul>
+
+        <h4>Null-Collision Framework (Novák et al. 2018)</h4>
+        <p>
+            Since the varying extinction coefficient \(\sigma_t\) prevents an analytical solution for Transmittance (\(T\)), we apply the unbiased null-collision framework. We define a <strong>majorant</strong> (\(\mu\))—a constant representing the volume's maximum density—and populate the density gaps with "fictitious" <strong>null particles</strong>. This creates a mathematically uniform medium, allowing for constant-rate sampling despite variable fog density:
+        </p>
+        <ul>
+            <li><strong>Delta Tracking (Sampling):</strong> Determines collision locations. We step along the ray using \(\Delta t = -\ln\xi/\mu\). A collision is "accepted" with probability \(\sigma_t/\mu\); if rejected, it is a "null collision," and the ray continues.</li>
+            <li><strong>Ratio Tracking (Transmittance):</strong> Estimates light attenuation for shadow rays. Rather than stopping at collisions, the intensity is scaled by \((1 - \sigma_t/\mu)\) at each step. The product of these ratios provides an unbiased estimate of total transmittance.</li>
+        </ul>
+
+        <h4>Scattering and Sun Shafts</h4>
+        <p>
+            At scatter events, the <strong>Henyey-Greenstein</strong> phase function determines the new light direction, using an anisotropy factor \(g\) to favor forward-scattering:
+            \[p_{\text{HG}}(\cos\theta;g) = \frac{1-g^2}{4\pi(1+g^2+2g\cos\theta)^{3/2}}\]
+            We use NEE and MIS to connect these points to lights. <strong>Sun shafts</strong> (God rays) emerge where Ratio Tracking confirms a clear path to the sun, while geometry creates the dark gaps between the beams.
+        </p>
+    </section>
+
+    <section>
+        <h2>Results</h2>
+
+        <p>Volumetric:</p>
+    </section>
+
+    <section>
+        <h2>Appendix</h2>
+        <b>References:</b>
+        <ul>
+            <li>hahaa</li>
+        </ul>
+
+        <b>Contributions:</b>
+        <ul>
+            <li>Ruoyu: </li>
+            <li>Madhav: </li>
+            <li>Sarah: </li>
+        </ul>
+    </section>
+</article>
+
+</body>
+</html>
