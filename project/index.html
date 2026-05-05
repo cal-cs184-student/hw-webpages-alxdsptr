@@ -63,6 +63,14 @@
         li {
             margin-bottom: 0.5em;
         }
+        img {
+            max-width: 100%;
+        }
+        figure {
+            text-align: center;
+            margin-left: 0;
+            margin-right: 0;
+        }
     </style>
 </head>
 <body>
@@ -187,12 +195,131 @@
             \[p_{\text{HG}}(\cos\theta;g) = \frac{1-g^2}{4\pi(1+g^2+2g\cos\theta)^{3/2}}\]
             We use NEE and MIS to connect these points to lights. <strong>Sun shafts</strong> (God rays) emerge where Ratio Tracking confirms a clear path to the sun, while geometry creates the dark gaps between the beams.
         </p>
+
+
+        <h3>ReSTIR</h3>
+
+        <h4>Motivation</h4>
+        <p>The goal of rendering is to compute the reflected radiance at each visible surface point. For direct lighting, this means evaluating an integral over all light-emitting surfaces:</p>
+
+        <p>$$L(y, \omega) = \int_A \rho(y, x) , L_e(x) , G(x \leftrightarrow y) , V(x \leftrightarrow y) , dA_x$$</p>
+
+        <p>where \(\rho\) is the BSDF, \(L_e\) is emitted radiance, \(G\) is a geometry term (inverse-square distance and cosine factors), and \(V\) is binary visibility. We abbreviate this as \(L = \int_A f(x),dx\).</p>
+
+        <p>Monte Carlo integration estimates this with \(N\) samples:</p>
+        <p>$$\langle L \rangle = \frac{1}{N} \sum_{i=1}^{N} \frac{f(x_i)}{p(x_i)}$$</p>
+
+        <p>Variance drops when \(p(x)\) closely matches \(f(x)\) — this is <strong>importance sampling</strong>. When several reasonable sampling strategies exist (e.g. sample proportional to the BSDF, or to the emitted light), <strong>Multiple Importance Sampling (MIS)</strong> combines them into a single low-variance estimator:</p>
+        <p>$$\langle L \rangle_\text{MIS} = \sum_s \frac{1}{N_s} \sum_{i=1}^{N_s} w_s(x_i) \frac{f(x_i)}{p_s(x_i)}$$</p>
+
+        <p>where the weights \(w_s\) form a partition of unity. This is the standard toolkit going into real-time rendering — but with millions of dynamic lights, even a good \(p\) is hard to construct cheaply.</p>
+
+        <p>What if we could sample from a target distribution \(\hat{p}(x) \propto f(x)\) that we can <em>evaluate</em> but not <em>sample</em> directly? <strong>RIS</strong> does this in two steps:</p>
+        <ol>
+            <li>Draw \(M\) candidate samples \(x_1, \ldots, x_M\) from a cheap source distribution \(p\).</li>
+            <li>Randomly select one candidate \(y = x_z\) with probability proportional to the ratio \(w(x_i) = \hat{p}(x_i)/p(x_i)\).</li>
+        </ol>
+
+        <p>The resulting estimator is:</p>
+        <p>$$\langle L \rangle_\text{RIS} = \frac{f(y)}{\hat{p}(y)} \cdot \frac{1}{M} \sum_{j=1}^{M} w(x_j)$$</p>
+
+        <p>As \(M \to \infty\), the distribution of \(y\) converges to \(\hat{p}\). In practice \(\hat{p}\) can be the unshadowed path contribution \(\rho \cdot L_e \cdot G\), which is cheap to evaluate — we only need to trace a shadow ray for the <em>one</em> surviving sample \(y\).</p>
+
+        <p><strong>Streaming RIS via reservoir sampling.</strong> Storing all \(M\) candidates is impractical on a GPU. Fortunately, <strong>weighted reservoir sampling (WRS)</strong> lets us process candidates one at a time, keeping only the current winner in a small "reservoir" \((y, w_\text{sum}, M)\). Each new candidate \(x_i\) replaces \(y\) with probability \(w(x_i)/w_\text{sum}\). The result is mathematically identical to full RIS, but uses \(O(1)\) memory regardless of \(M\).</p>
+
+        <p><strong>Spatiotemporal reuse.</strong> A key property of reservoirs is that they can be <em>merged</em>: the union of two reservoirs' input streams is simulated by treating each reservoir's winner as a fresh candidate with weight \(\hat{p}(y) \cdot W \cdot M\). This enables two powerful reuse strategies:</p>
+        <ul>
+            <li><strong>Spatial reuse:</strong> each pixel combines its reservoir with those of \(k\) random spatial neighbors. Per-pixel cost is \(O(k + M)\), but the effective candidate count grows to \(k^n M\) after \(n\) iterations.</li>
+            <li><strong>Temporal reuse:</strong> the previous frame's reservoir is fed into the current frame, amortizing sample cost over time and dramatically reducing noise after just a few frames.</li>
+        </ul>
+        <p>Together these form <strong>ReSTIR</strong>: Reservoir-based Spatiotemporal Importance Resampling.</p>
+
+        <div class="hr"></div>
+
+        <h4>ReSTIR DI</h4>
+        <p>ReSTIR DI applies the above framework specifically to <strong>direct lighting from many emitters</strong>.</p>
+        <p>Initial candidates are drawn proportional to emitted power (\(p \propto L_e\)), and the target is the unshadowed contribution:</p>
+        <p>$$\hat{p}(x) = \rho(x) \cdot L_e(x) \cdot G(x)$$</p>
+        <p>Only after resampling is a shadow ray traced for the surviving sample — so the expensive visibility query is paid only once per pixel rather than \(M\) times.</p>
+        <p>The paper introduces a unbiased fix: Naively combining reservoirs from neighboring pixels is <em>biased</em>: a neighbor might have discarded a direction that would have been valid at the current pixel (e.g. due to differing surface normals or occlusion). The unbiased fix reweights by counting, for the chosen sample \(y\), how many of the \(M\) source distributions could actually have generated it.</p>
+        <p>However, for performance reasons we did not implement this unbiased correction, as it would require one additional shadow ray per spatial neighbor.</p>
+
+        <div class="hr"></div>
+
+        <h4>ReSTIR GI</h4>
+        <p>ReSTIR DI only handles direct lighting — the first bounce from lights to camera. ReSTIR GI extends the framework to <strong>multi-bounce indirect illumination</strong>.</p>
+        <p><strong>The core change: where samples live.</strong> Instead of sampling points on light surfaces, ReSTIR GI samples <em>directions</em> from each visible surface point and traces rays to find "sample points" \(x_s\) on scene geometry. At each sample point, the outgoing radiance \(\hat{L}_o(x_s)\) is estimated by path tracing. The target function becomes:</p>
+        <p>$$\hat{p} = L_o(x_s) \cdot f(\omega_o, \omega_i) \cdot \langle \cos\theta_i \rangle$$</p>
+        <p>or simply \(\hat{p} = L_o(x_s)\) for a simpler but still effective variant that generalizes better across neighbors.</p>
+        <p><strong>The Jacobian correction.</strong> When a sample point \(x_s\) is reused from neighbor pixel \(q\) at pixel \(r\), the solid-angle PDF transforms differently between the two pixels. This requires a Jacobian correction during spatial reuse:</p>
+        <p>$$|J_{q \to r}| = \frac{|\cos\phi_2^r|}{|\cos\phi_2^q|} \cdot \frac{|x_1^q - x_2^q|^2}{|x_1^r - x_2^q|^2}$$</p>
+        <p>Ignoring this factor introduces lighting discontinuities. No such correction was needed in ReSTIR DI because light samples were drawn globally, independent of each pixel's local geometry.</p>
+
+        <div class="hr"></div>
+
+        <h4>ReSTIR PT</h4>
+        <p>The reuse target is extended from a single secondary vertex to a <strong>full path</strong>. The reservoir layout is the same as in ReSTIR GI, but instead of storing a one-bounce indirect sample, it now stores a complete multi-bounce path suffix — traced with standard path tracing, with NEE at each vertex, up to 4 bounces plus Russian roulette termination. We refer to the first vertex of this suffix as the <strong>reconnection vertex</strong> \(\mathbf{x}_r\).</p>
+        <p>When the suffix is borrowed by another pixel \(r\), the segment from the new visible point to \(\mathbf{x}_r\) changes in length and incident direction, but the world-space path beyond \(\mathbf{x}_r\) remains entirely unchanged. This is the essence of the <strong>reconnection shift mapping</strong>: only the first segment is rewired, and the Jacobian correction accounts for the change in solid angle.</p>
+        <p><strong>Shift mappings.</strong> To reuse a path traced at pixel \(q\) for pixel \(r\), we need to map it to a valid path in pixel \(r\)'s domain. ReSTIR PT supports two strategies:</p>
+        <ul>
+            <li><strong>Reconnection shift:</strong> directly set the first indirect vertex of the offset path to \(\mathbf{x}_r\), hard-connecting the new visible point to the stored reconnection vertex and keeping the rest of the path unchanged. Simple and cheap, works well for rough and diffuse surfaces.</li>
+            <li><strong>Hybrid shift (random replay + reconnection):</strong> replay the base path's random numbers up to the first sufficiently rough vertex before reconnecting. This handles glossy and specular materials more gracefully, where a direct hard reconnection would produce near-zero contribution.</li>
+        </ul>
+        <p><strong>Engineering trade-off.</strong> For simplicity, we only implement the reconnection shift — both the base and offset paths use a hard connection on the \(\mathbf{q} \to \mathbf{x}_r\) segment. The hybrid shift is not implemented. This means paths involving fully specular or glass chains cannot be meaningfully reused: their reconnection would land on a near-delta BSDF lobe, producing a contribution that is essentially zero at the offset pixel. To handle this gracefully, we apply a roughness gate — reconnection is only permitted when the GGX roughness \(\alpha \geq 0.2\) at the reconnection vertex. Paths that fail this test are discarded early rather than being allowed to pollute the reservoir with near-zero-weight samples. The practical consequence is that in scenes dominated by metal-glass combinations, ReSTIR PT degrades to standard path tracing. However, such scenes are rare in our test suite, so this limitation has little impact on overall results.</p>
+
     </section>
 
     <section>
         <h2>Results</h2>
 
-        <p>Volumetric:</p>
+        <figure>
+            <img src="assets/bistro_interior.png">
+            <figcaption><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroInterior</a> Render</figcaption>
+        </figure>
+
+        <h2>Performance</h2>
+        <p>Here is the render FPS & speedup with 1 sample/pixel/frame @ 1280x720p on an Nvidia 4070 laptop GPU:</p>
+
+			<div style="display: flex; flex-direction: column; align-items: center;">
+				<table style="width: 100%; text-align: center; border-collapse: collapse; border: 1px solid black;">
+					<tr>
+						<td style="text-align: center; border: 1px solid black;"><b>Scene</b></td>
+						<td style="text-align: center; border: 1px solid black;"><b>CUDA</b></td>
+						<td style="text-align: center; border: 1px solid black;"><b>CUDA + DLSS</b></td>
+						<td style="text-align: center; border: 1px solid black;"><b>OptiX</b></td>
+						<td style="text-align: center; border: 1px solid black;"><b>OptiX + DLSS</b></td>
+					</tr>
+					<tr>
+						<td style="text-align: center; border: 1px solid black;">CBbunny.dae</td>
+						<td style="text-align: center; border: 1px solid black;">176</td>
+						<td style="text-align: center; border: 1px solid black;">239</td>
+						<td style="text-align: center; border: 1px solid black;">236</td>
+						<td style="text-align: center; border: 1px solid black;">240+ (max'd)</td>
+					</tr>
+					<tr>
+						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroInterior</a></td>
+						<td style="text-align: center; border: 1px solid black;">8.5</td>
+						<td style="text-align: center; border: 1px solid black;">23</td>
+						<td style="text-align: center; border: 1px solid black;">96</td>
+						<td style="text-align: center; border: 1px solid black;">186</td>
+					</tr>
+					<tr>
+						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/beeple-zero-day">MEASURE_SEVEN_COLORED_LIGHTS</a></td>
+						<td style="text-align: center; border: 1px solid black;">14.4</td>
+						<td style="text-align: center; border: 1px solid black;">38</td>
+						<td style="text-align: center; border: 1px solid black;">126</td>
+						<td style="text-align: center; border: 1px solid black;">209</td>
+					</tr>
+					<tr>
+						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroExterior</a></td>
+						<td style="text-align: center; border: 1px solid black;">13.8</td>
+						<td style="text-align: center; border: 1px solid black;">37</td>
+						<td style="text-align: center; border: 1px solid black;">149</td>
+						<td style="text-align: center; border: 1px solid black;">240</td>
+					</tr>
+				</table>
+			</div>
+
     </section>
 
     <section>
