@@ -85,6 +85,9 @@
         Webpage: <a href="https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/">https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/</a> <br>
         Video: <a href="https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/video.mp4">https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/video.mp4</a> <br>
         Slides: <a href="https://docs.google.com/presentation/d/1n7q62EQHurB_3B-XP5PE5sxp8KOv4Cl8ubBvNd0pqZU/edit?slide=id.p#slide=id.p">See on Google Slides</a> <br>
+        Code: <a href="https://github.com/alxdsptr/cs184_project">https://github.com/alxdsptr/cs184_project</a> <br>
+
+        <p><i>Note: If reading the PDF, please check the website for animated GIFs / videos in some of the sections below!</i></p>
     </section>
 
     <section class="abstract">
@@ -164,6 +167,12 @@
             Since such a perfectly smooth surface belongs to a Dirac-delta distribution, the \(\delta\) functions in the BSDF value and the sampling PDF cancel each other out exactly, making the throughput update very simple: you only need to multiply by the material's color. For tinted glass, we apply a simple Beer-Lambert absorption on the rays exiting the medium.
         </p>
 
+        <figure>
+            <img src="assets/bistro_interior.png">
+            <figcaption><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroInterior</a> Render</figcaption>
+        </figure>
+
+
         <h3>Volumetric Rendering</h4>
         <p>
             To render realistic atmospheric effects, we solve the Volume Rendering Equation along each camera ray:
@@ -195,6 +204,24 @@
             \[p_{\text{HG}}(\cos\theta;g) = \frac{1-g^2}{4\pi(1+g^2+2g\cos\theta)^{3/2}}\]
             We use NEE and MIS to connect these points to lights. <strong>Sun shafts</strong> (God rays) emerge where Ratio Tracking confirms a clear path to the sun, while geometry creates the dark gaps between the beams.
         </p>
+
+        <figure>
+            <img src="assets/bistro_sun_shafts.png">
+            <figcaption>Sun shafts / god rays through a tree in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroExterior</a></figcaption>
+        </figure>
+
+        <div style="display: flex">
+        <figure style="flex: 1">
+            <img src="assets/fog_cbdragon.png">
+            <figcaption>Basic colored fog</figcaption>
+        </figure>
+
+        <figure style="flex: 1">
+            <img src="assets/fog_bistro_exterior.png">
+            <figcaption>Fog in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroExterior</a></figcaption>
+        </figure>
+       </div>
+
 
 
         <h3>ReSTIR</h3>
@@ -270,13 +297,6 @@
     </section>
 
     <section>
-        <h2>Results</h2>
-
-        <figure>
-            <img src="assets/bistro_interior.png">
-            <figcaption><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroInterior</a> Render</figcaption>
-        </figure>
-
         <h2>Performance</h2>
         <p>Here is the render FPS & speedup with 1 sample/pixel/frame @ 1280x720p on an Nvidia 4070 laptop GPU:</p>
 
@@ -319,6 +339,9 @@
 					</tr>
 				</table>
 			</div>
+
+
+            <h2>Final Results</h2>
 
     </section>
 
