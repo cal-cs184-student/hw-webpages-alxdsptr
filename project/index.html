@@ -116,6 +116,30 @@
             border-radius: 4px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
+
+        a {
+            color: #2c77ba;
+            text-decoration: none;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+
+        a::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #2c77ba;
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        a:hover::after {
+            transform: scaleX(1);
+        }
+
     </style>
 </head>
 <body>
@@ -213,8 +237,14 @@
         </p>
 
         <figure>
+            <img src="assets/bistro_interior_table.png">
+            <figcaption>Zoomed in render of <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Interior</a> to show BSDFs</figcaption>
+        </figure>
+
+
+        <figure>
             <img src="assets/bistro_interior.png">
-            <figcaption><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroInterior</a> render showing these features</figcaption>
+            <figcaption>Full <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Interior</a> render</figcaption>
         </figure>
 
 
@@ -252,7 +282,7 @@
 
         <figure>
             <img src="assets/bistro_sun_shafts2.png">
-            <figcaption>Sun shafts / god rays through a tree in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroExterior</a></figcaption>
+            <figcaption>Sun shafts / god rays through a tree in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Exterior</a></figcaption>
         </figure>
 
         <div class="full-width">
@@ -264,7 +294,7 @@
 
         <figure>
             <img src="assets/fog_bistro_exterior.png">
-            <figcaption>Smoke/fog in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroExterior</a></figcaption>
+            <figcaption>Smoke/fog in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Exterior</a></figcaption>
         </figure>
        </div>
        </div>
@@ -371,6 +401,22 @@
         </div>
         </div>
 
+        <figure style="width: 100%; margin: 0 0 2rem 0;">
+            <figcaption style="text-align: center; font-weight: bold; padding: 10px;">
+                <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Interior</a>: ReSTIR Comparison (1 spp)
+            </figcaption>
+
+            <!-- File is too big for GitHub -->
+            <!-- <video width="100%" height="auto" controls muted loop>
+                <source src="assets/bistro_interior_ReSTIR_comparison.mp4?v=1" type="video/mp4">
+            </video> -->
+
+            <div class="video-container">
+                <iframe src="https://drive.google.com/file/d/10zZ20s-fEwtsvbXrHHiNz1d_cNqYPGTc/preview"></iframe>
+            </div>
+        </figure>
+
+
         <h3> OptiX, NRD, and DLSS Integration</h3>
         <p>
             To use RT cores instead of CUDA cores for ray tracing, we integrated <strong>OptiX</strong>. This required compiling our path-tracing kernels as OptiX raygen / closest-hit / miss / any-hit programs, building a hardware BVH (GAS) over the scene, and setting up a Shader Binding Table that selects the right raygen entry per render mode.
@@ -404,6 +450,39 @@
         </div>
         </div>
 
+        <style>
+            .video-container {
+                position: relative;
+                width: 100%;
+                height: 0;
+                padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            }
+            .video-container iframe {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+        </style>
+
+        <figure style="width: 100%; margin: 0 0 2rem 0;">
+            <!-- File is too big for GitHub -->
+            <!-- <video width="100%" height="auto" controls muted loop>
+                <source src="assets/bistro_interior_NRD_comparison.mp4?v=1" type="video/mp4">
+            </video> -->
+
+            <div class="video-container">
+                <iframe src="https://drive.google.com/file/d/1ErzSPg3xbyiosu3YLsX_z8W1nTrZDsxl/preview" width="100%"></iframe>
+            </div>
+
+            <figcaption style="text-align: center; padding: 10px;">
+                <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Interior</a>: NRD Denoiser Comparison (1 spp)
+            </figcaption>
+        </figure>
+
+
         <h3>Performance</h3>
         <p>Here is the render FPS & speedup with 1 sample/pixel/frame @ 1280x720p on an Nvidia 4070 laptop GPU:</p>
 
@@ -424,21 +503,21 @@
 						<td style="text-align: center; border: 1px solid black;">240+ (max'd)</td>
 					</tr>
 					<tr>
-						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroInterior</a></td>
+						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Interior</a></td>
 						<td style="text-align: center; border: 1px solid black;">8.5</td>
 						<td style="text-align: center; border: 1px solid black;">23</td>
 						<td style="text-align: center; border: 1px solid black;">96</td>
 						<td style="text-align: center; border: 1px solid black;">186</td>
 					</tr>
 					<tr>
-						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/beeple-zero-day">MEASURE_SEVEN_COLORED_LIGHTS</a></td>
+						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/beeple-zero-day">Measure Seven: Colored Lights</a></td>
 						<td style="text-align: center; border: 1px solid black;">14.4</td>
 						<td style="text-align: center; border: 1px solid black;">38</td>
 						<td style="text-align: center; border: 1px solid black;">126</td>
 						<td style="text-align: center; border: 1px solid black;">209</td>
 					</tr>
 					<tr>
-						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">BistroExterior</a></td>
+						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Exterior</a></td>
 						<td style="text-align: center; border: 1px solid black;">13.8</td>
 						<td style="text-align: center; border: 1px solid black;">37</td>
 						<td style="text-align: center; border: 1px solid black;">149</td>
@@ -455,6 +534,32 @@
 
         <p>Please see these clips:</p>
 
+        <figure style="width: 100%; margin: 0 0 2rem 0;">
+            <video width="100%" height="auto" controls muted loop>
+                <source src="assets/bistro_exterior_DI_GI_NRD_DLSS_DLAA.mp4?v=1" type="video/mp4">
+            </video>
+            <figcaption style="text-align: center; padding: 10px;">
+                <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Exterior</a>: ReSTIR DI + GI, NRD, and DLSS (DLAA mode)
+            </figcaption>
+        </figure>
+
+        <figure style="width: 100%; margin: 0 0 2rem 0;">
+            <video width="100%" height="auto" controls muted loop>
+                <source src="assets/measure7_NRD_DLSS_DLAA.mp4?v=1" type="video/mp4">
+            </video>
+            <figcaption style="text-align: center; padding: 10px;">
+                <a href="https://developer.nvidia.com/orca/beeple-zero-day">Measure Seven</a>: NRD and DLSS (DLAA mode)
+            </figcaption>
+        </figure>
+
+        <figure style="width: 100%; margin: 0 0 2rem 0;">
+            <video width="100%" height="auto" controls muted loop>
+                <source src="assets/measure7_animation.mp4?v=1" type="video/mp4">
+            </video>
+            <figcaption style="text-align: center; padding: 10px;">
+                <a href="https://developer.nvidia.com/orca/beeple-zero-day">Measure Seven</a>: Bonus Animation
+            </figcaption>
+        </figure>
     </section>
 
     <section>
@@ -493,6 +598,21 @@
             <li>Ruoyu: Did the largest chunk of the work! Most of the implementation: created the framework, set up basic path tracer with CUDA & OptiX, implemented ReSTIR, etc.</li>
             <li>Madhav: Wrote proposal, made milestone video, and made report website. Implemented directional lighting, spotlights, and volumetric fog in new framework, and fixed some bugs. Did initial experimentation & animations with hw3 codebase before we created our own framework, and set up GPU/OpenGL access for others over SSH.</li>
             <li>Sarah: Helped with proposal.</li>
+        </ul>
+
+
+        <b>Assets:</b>
+
+        <ul>
+        <li>
+            Amazon Lumberyard (July 2017). Amazon Lumberyard Bistro, Open Research Content Archive (ORCA).
+            <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank">Link</a>
+        </li>
+
+        <li>
+            Winkelmann, M. (November 2019). Zero-Day, Open Research Content Archive (ORCA). 
+            <a href="https://developer.nvidia.com/orca/beeple-zero-day" target="_blank">Link</a>
+        </li>
         </ul>
     </section>
 </article>
