@@ -4,9 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Real-Time GPU Path Tracing</title>
-    <!-- MathJax Script for LaTeX rendering -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Can enable to line break equations on mobile instead of scrolling -->
+    <!-- <script>
+        window.MathJax = {
+            chtml: {
+                displayOverflow: 'linebreak',
+                linebreaks: {
+                    inline: true,
+                    width: '100%',
+                    lineleading: .2
+                }
+            },
+            startup: {
+                ready: () => {
+                    MathJax.startup.defaultReady();
+                    // Recalculate line breaks if the user rotates their screen
+                    // TODO: not working properly?
+                    window.addEventListener('resize', () => {
+                        MathJax.startup.document.rerender();
+                    });
+                }
+            }
+        };
+    </script> -->
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <style>
         html {
             scrollbar-gutter: stable both-edges;
@@ -17,7 +38,7 @@
             color: #333;
             max-width: 850px;
             margin: 40px auto;
-            padding: 0 20px;
+            padding: 0 1.4rem;
             background-color: #fdfdfd;
         }
         header {
@@ -104,7 +125,7 @@
             /* This creates as many columns as fit, each at least 400px wide */
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
-            padding: 2rem;
+            padding: 1.4rem;
             max-width: 1200px;
             margin: auto;
         }
@@ -155,6 +176,35 @@
             transform: scaleX(1);
         }
 
+        .perf-table table {
+            width: 100%;
+            text-align: center;
+            border-collapse: collapse;
+        }
+
+        .perf-table thead {
+            border-bottom: 2px solid #34495e;
+        }
+
+        .perf-table th {
+            padding-bottom: 0.25rem;
+        }
+
+        .perf-table tbody > tr:first-child td {
+            padding-top: 0.5rem;
+        }
+
+        .perf-table td:first-child, .perf-table th:first-child {
+            text-align: left;
+        }
+
+        /* tr:hover { background-color: #f1f1f1; } */
+
+        mjx-container {
+            overflow-x: auto;
+            overflow-y: hidden; /* Prevents vertical scrollbars */
+            max-width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -168,8 +218,8 @@
     <section>
         Webpage: <a href="https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/">https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/</a> <br>
         Video: <a href="https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/video.mp4">https://cal-cs184-student.github.io/hw-webpages-alxdsptr/project/video.mp4</a> <br>
-        Slides: <a href="https://docs.google.com/presentation/d/1n7q62EQHurB_3B-XP5PE5sxp8KOv4Cl8ubBvNd0pqZU/edit?slide=id.p#slide=id.p">See on Google Slides</a> <br>
-        Code: <a href="https://github.com/alxdsptr/cs184_project">https://github.com/alxdsptr/cs184_project</a> <br>
+        Slides: <a href="https://docs.google.com/presentation/d/1n7q62EQHurB_3B-XP5PE5sxp8KOv4Cl8ubBvNd0pqZU/edit?slide=id.p#slide=id.p" target="_blank" rel="noopener noreferrer">See on Google Slides</a> <br>
+        Code: <a href="https://github.com/alxdsptr/cs184_project" target="_blank" rel="noopener noreferrer">https://github.com/alxdsptr/cs184_project</a> <br>
 
         <p><i>Note: If reading the PDF, please check the website to see animated GIFs / videos in some of the sections below!</i></p>
     </section>
@@ -253,13 +303,13 @@
 
         <figure>
             <img src="assets/bistro_interior_table.png">
-            <figcaption>Zoomed in render of <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Interior</a> to show BSDFs</figcaption>
+            <figcaption>Zoomed in render of <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank" rel="noopener noreferrer">Bistro Interior</a> to show BSDFs</figcaption>
         </figure>
 
 
         <figure>
             <img src="assets/bistro_interior.png">
-            <figcaption>Full <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Interior</a> render</figcaption>
+            <figcaption>Full <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank" rel="noopener noreferrer">Bistro Interior</a> render</figcaption>
         </figure>
 
 
@@ -297,7 +347,7 @@
 
         <figure>
             <img src="assets/bistro_sun_shafts2.png">
-            <figcaption>Sun shafts / god rays through a tree in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Exterior</a></figcaption>
+            <figcaption>Sun shafts / god rays through a tree in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank" rel="noopener noreferrer">Bistro Exterior</a></figcaption>
         </figure>
 
         <div class="full-width">
@@ -309,7 +359,7 @@
 
         <figure>
             <img src="assets/fog_bistro_exterior.png">
-            <figcaption>Smoke/fog in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Exterior</a></figcaption>
+            <figcaption>Smoke/fog in <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank" rel="noopener noreferrer">Bistro Exterior</a></figcaption>
         </figure>
        </div>
        </div>
@@ -418,7 +468,7 @@
 
         <figure style="width: 100%; margin: 0 0 2rem 0;">
             <figcaption style="text-align: center; font-weight: bold; padding: 10px;">
-                <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Interior</a>: ReSTIR Comparison (1 spp)
+                <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank" rel="noopener noreferrer">Bistro Interior</a>: ReSTIR Comparison (1 spp)
             </figcaption>
 
             <!-- File is too big for GitHub -->
@@ -484,7 +534,7 @@
             </div>
 
             <figcaption style="text-align: center; padding: 10px;">
-                <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Interior</a>: NRD Denoiser Comparison (1 spp)
+                <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank" rel="noopener noreferrer">Bistro Interior</a>: NRD Denoiser Comparison (1 spp)
             </figcaption>
         </figure>
 
@@ -492,45 +542,49 @@
         <h3>Performance</h3>
         <p>Here is the render FPS & speedup with 1 sample/pixel/frame @ 1280x720p on an Nvidia 4070 laptop GPU:</p>
 
-			<div style="display: flex; flex-direction: column; align-items: center;">
-				<table style="width: 100%; text-align: center; border-collapse: collapse; border: 1px solid black;">
-					<tr>
-						<td style="text-align: center; border: 1px solid black;"><b>Scene</b></td>
-						<td style="text-align: center; border: 1px solid black;"><b>CUDA</b></td>
-						<td style="text-align: center; border: 1px solid black;"><b>CUDA + DLSS</b></td>
-						<td style="text-align: center; border: 1px solid black;"><b>OptiX</b></td>
-						<td style="text-align: center; border: 1px solid black;"><b>OptiX + DLSS</b></td>
-					</tr>
-					<tr>
-						<td style="text-align: center; border: 1px solid black;">CBbunny.dae</td>
-						<td style="text-align: center; border: 1px solid black;">176</td>
-						<td style="text-align: center; border: 1px solid black;">239</td>
-						<td style="text-align: center; border: 1px solid black;">236</td>
-						<td style="text-align: center; border: 1px solid black;">240+ (max'd)</td>
-					</tr>
-					<tr>
-						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Interior</a></td>
-						<td style="text-align: center; border: 1px solid black;">8.5</td>
-						<td style="text-align: center; border: 1px solid black;">23</td>
-						<td style="text-align: center; border: 1px solid black;">96</td>
-						<td style="text-align: center; border: 1px solid black;">186</td>
-					</tr>
-					<tr>
-						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/beeple-zero-day">Measure Seven: Colored Lights</a></td>
-						<td style="text-align: center; border: 1px solid black;">14.4</td>
-						<td style="text-align: center; border: 1px solid black;">38</td>
-						<td style="text-align: center; border: 1px solid black;">126</td>
-						<td style="text-align: center; border: 1px solid black;">209</td>
-					</tr>
-					<tr>
-						<td style="text-align: center; border: 1px solid black;"><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Exterior</a></td>
-						<td style="text-align: center; border: 1px solid black;">13.8</td>
-						<td style="text-align: center; border: 1px solid black;">37</td>
-						<td style="text-align: center; border: 1px solid black;">149</td>
-						<td style="text-align: center; border: 1px solid black;">240</td>
-					</tr>
-				</table>
-			</div>
+        <div class="perf-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scene</th>
+                        <th>CUDA</th>
+                        <th>CUDA + DLSS</th>
+                        <th>OptiX</th>
+                        <th>OptiX + DLSS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>CBbunny.dae</td>
+                        <td>176</td>
+                        <td>239</td>
+                        <td>236</td>
+                        <td>240+ (max'd)</td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank" rel="noopener noreferrer">Bistro Interior</a></td>
+                        <td>8.5</td>
+                        <td>23</td>
+                        <td>96</td>
+                        <td>186</td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://developer.nvidia.com/orca/beeple-zero-day" target="_blank" rel="noopener noreferrer">Measure Seven: Colored Lights</a></td>
+                        <td>14.4</td>
+                        <td>38</td>
+                        <td>126</td>
+                        <td>209</td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank" rel="noopener noreferrer">Bistro Exterior</a></td>
+                        <td>13.8</td>
+                        <td>37</td>
+                        <td>149</td>
+                        <td>240</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
     </section>
 
@@ -545,7 +599,7 @@
                 <source src="assets/bistro_exterior_DI_GI_NRD_DLSS_DLAA.mp4?v=1" type="video/mp4">
             </video>
             <figcaption style="text-align: center; padding: 10px;">
-                <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro">Bistro Exterior</a>: ReSTIR DI + GI, NRD, and DLSS (DLAA mode)
+                <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank" rel="noopener noreferrer">Bistro Exterior</a>: ReSTIR DI + GI, NRD, and DLSS (DLAA mode)
             </figcaption>
         </figure>
 
@@ -554,7 +608,7 @@
                 <source src="assets/measure7_NRD_DLSS_DLAA.mp4?v=1" type="video/mp4">
             </video>
             <figcaption style="text-align: center; padding: 10px;">
-                <a href="https://developer.nvidia.com/orca/beeple-zero-day">Measure Seven</a>: NRD and DLSS (DLAA mode)
+                <a href="https://developer.nvidia.com/orca/beeple-zero-day" target="_blank" rel="noopener noreferrer">Measure Seven</a>: NRD and DLSS (DLAA mode)
             </figcaption>
         </figure>
 
@@ -563,7 +617,7 @@
                 <source src="assets/measure7_animation.mp4?v=1" type="video/mp4">
             </video>
             <figcaption style="text-align: center; padding: 10px;">
-                <a href="https://developer.nvidia.com/orca/beeple-zero-day">Measure Seven</a>: Bonus Animation
+                <a href="https://developer.nvidia.com/orca/beeple-zero-day" target="_blank" rel="noopener noreferrer">Measure Seven</a>: Bonus animation with dynamic BVH refitting
             </figcaption>
         </figure>
     </section>
@@ -576,22 +630,22 @@
             <li>
                 <strong>Spatiotemporal Reservoir Resampling (ReSTIR)</strong><br>
                 Bitterli, B., et al. (2020). Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting. <em>ACM Transactions on Graphics (SIGGRAPH)</em>. 
-                <a href="https://research.nvidia.com/sites/default/files/pubs/2020-07_Spatiotemporal-reservoir-resampling/ReSTIR.pdf">Link</a>
+                <a href="https://research.nvidia.com/sites/default/files/pubs/2020-07_Spatiotemporal-reservoir-resampling/ReSTIR.pdf" target="_blank" rel="noopener noreferrer">Link</a>
             </li>
             <li>
                 <strong>ReSTIR GI</strong><br>
                 Ouyang, J., et al. (2021). ReSTIR GI: Path resampling for real-time path tracing. <em>Computer Graphics and Interactive Techniques</em>. 
-                <a href="https://research.nvidia.com/publication/2021-06_restir-gi-path-resampling-real-time-path-tracing">Link</a>
+                <a href="https://research.nvidia.com/publication/2021-06_restir-gi-path-resampling-real-time-path-tracing" target="_blank" rel="noopener noreferrer">Link</a>
             </li>
             <li>
                 <strong>Generalized RIS (GRIS)</strong><br>
                 Lin, D., et al. (2022). Generalized Resampled Importance Sampling: Foundations of ReSTIR. <em>ACM Transactions on Graphics (SIGGRAPH)</em>. 
-                <a href="https://research.nvidia.com/publication/2022-07_generalized-resampled-importance-sampling-foundations-restir">Link</a>
+                <a href="https://research.nvidia.com/publication/2022-07_generalized-resampled-importance-sampling-foundations-restir" target="_blank" rel="noopener noreferrer">Link</a>
             </li>
             <li>
                 <strong>ReSTIR PT Enhanced</strong><br>
                 Lin, D., et al. (2026). ReSTIR PT Enhanced: Algorithmic advances for faster and more robust ReSTIR path tracing. <em>NVIDIA Research</em>. 
-                <a href="https://research.nvidia.com/labs/rtr/publication/lin2026restirptenhanced/">Link</a>
+                <a href="https://research.nvidia.com/labs/rtr/publication/lin2026restirptenhanced/" target="_blank" rel="noopener noreferrer">Link</a>
             </li>
             <li>
                 <strong>Volumetric Light Transport</strong><br>
@@ -612,12 +666,12 @@
         <ul>
         <li>
             Amazon Lumberyard (July 2017). Amazon Lumberyard Bistro, Open Research Content Archive (ORCA).
-            <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank">Link</a>
+            <a href="https://developer.nvidia.com/orca/amazon-lumberyard-bistro" target="_blank" rel="noopener noreferrer">Link</a>
         </li>
 
         <li>
-            Winkelmann, M. (November 2019). Zero-Day, Open Research Content Archive (ORCA). 
-            <a href="https://developer.nvidia.com/orca/beeple-zero-day" target="_blank">Link</a>
+            Winkelmann, M. (November 2019). Zero-Day, Open Research Content Archive (ORCA).
+            <a href="https://developer.nvidia.com/orca/beeple-zero-day" target="_blank" rel="noopener noreferrer">Link</a>
         </li>
         </ul>
     </section>
